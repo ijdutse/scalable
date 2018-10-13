@@ -9,10 +9,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-
 class Scalable (object):
-    """Python class to compute similarity between n tweets in a finite window that can be scaled to accommodate tweets efficiently. Initialise/trigger
-    the class to create instances by supplying path to the file containing the data and the window size of batch size to return"""
+    """Python class to compute similarity between n tweets in a finite window that can be scaled to accommodate tweets efficiently.
+    Initialise/trigger the class to create instances by supplying path to the file containing your data and the
+    the window size or batch size to return"""
 
     def __init__(self, dataframe, window_size): # defines the constructor:
          self.dataframe = dataframe
@@ -59,7 +59,6 @@ class Scalable (object):
             similarity_scores.append(cosim[0])
         return similarity_scores
 
-
     def view_results(self, scores):
         self.scores = scores
         """This function visualises the pairwise simialrity scores between pair of tweets"""
@@ -77,9 +76,8 @@ class Scalable (object):
 
 if __name__=='__main__':
     """The main function to initialise/trigger the Scalable class to make its methods available"""
-    trigger = Scalable('test.csv',100)
+    trigger = Scalable('test.csv',100) # the window_size here is being overshadowed by the window_size in tweets_batch function
     stream = trigger.tweets_stream() # stream of tweets to pull out m batches
     batch = trigger.tweets_batch(stream, 313) # batch of tweets from stream of tweets
-    sim_scores = trigger.tweets_sim(batch) #
-    print(sim_scores)
+    sim_scores = trigger.tweets_sim(batch) # print(sim_scores)
     view_result = trigger.view_results(sim_scores) # visualise simialriy scores
