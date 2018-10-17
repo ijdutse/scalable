@@ -59,6 +59,7 @@ class Scalable (object):
             similarity_scores.append(cosim[0])
         return similarity_scores
     def tweets_sim1(self, tweets_list):
+        # THIS FUNCTION IS SIMILAR TO THE window function below:
         """The following function computes the pairwise similarity between paair of random tweets using cosine similarityself.
         This function dffers from the the above (tweet_sim) as it considers all the possible anchors in the given window. for
         instance, a window of size 11 will have 10 possible anchors, hence 10 different windows of disproportionate sizes"""
@@ -90,10 +91,9 @@ class Scalable (object):
             other_index +=1
         return all_similarity_scores, tracker
 
-    def frame(self, tweets_list):
-        """This function takes list of tweets and return set of windows. A frame is a unit of computation that can take very
-        large file, break it into finite windows and return the associated metrics in each window. Each window consist of list of Top Scores
-        and a dictionary of tracker consisting of Top scores for each anchor tweet and the corresponding number of the top scores"""
+    def window (self, tweets_list):
+        """This function takes list of tweets and return single window and relevant metrics - list of Top Scores, dictionary
+         of tracker consisting of Top scores for each anchor tweet and the corresponding number of the top scores"""
         self.tweets_list = tweets_list
         frame = {} # initialise empty frame to store all window instances and associated values
         for r in range(5):
@@ -121,7 +121,55 @@ class Scalable (object):
                 anchor_index +=1 # pick the next tweet as the next anchor
                 other_index +=1 # shrink the window size by a factor of 1
 
+        return window
+
+    def frame(self, tweets_list, frame_size = 3):
+        """This function takes list of tweets and return set of windows. A frame is a unit of computation that can take very
+        large file, break it into finite windows and return the associated metrics in each window. Each window consist of list of Top Scores
+        and a dictionary of tracker consisting of Top scores for each anchor tweet and the corresponding number of the top scores
+        The frame also contains top scores and corresponding indices in each window"""
+        self.tweets_list = tweets_list # list of tweets to be broken into n windows
+        self.frame_size = frame_size # number of windows in each frame
+        window_size = int(len(tweets_list)/frame_size) # size of each widnow in the frame
+        window_tweets = np.array_split(tweets_list, frame_size) # split tweets into window tweets according to the frame size, default is 3
+        frame = {} # initialise empty frame to store all window instances and associated values
+        k = 0 # initialise stopping criteria
+        while k < frame_size:
+            for window, window_tweet in zip(range(window_size),window_tweets):
+                frame['Window_'+str(window)] = {'Top Scores':[],'Counter':[], 'Score Tracker':[]} # for each window store its top scores, tuple of top scores and indices
+                anchor_index = 0
+                other_index = 1
+                while other_index < len(window_tweet)-1:
+                    discarded_pair = 0 # keeps track of number of pairs with simialrity of 0.0 or 1.0
+                    retained_pair = 0 # keeps track of number of pairs greater than 0.0 and less than 1.0
+                    for anchor_tweet, other_tweet in zipper(window_tweet[anchor_index:], window_tweet[other_index:]):
+                        tweet_pair = [] #  only stores the pair of tweets for simialrity computation. This is being created and deleted continously
+                        if other_tweet in window_tweet[1:][-1]: # avoids TypeError on reaching the final tweet in the list
+                            break
+                        anchor_tweet = window_tweet[anchor_index] # make the anchor tweet constant for each iteration in the window
+                        tweet_pair.append(anchor_tweet), tweet_pair.append(other_tweet)# stores pairs for simialrity computation only
+                        vectorizer = TfidfVectorizer(lowercase = False)
+                        vectorised_pair = vectorizer.fit_transform(tweet_pair) # convert tweet_pair to numeric using tfidf scheme
+                        cosim = np.round(cosine_similarity(vectorised_pair.toarray()[0].reshape(1,-1), vectorised_pair.toarray()[1].reshape(1,-1)).flatten(),2)
+                        if cosim[0] == 0.0 or cosim[0] == 1.0:
+                            discarded_pair +=1
+                            continue
+                        frame['Window_'+str(window)]['Top Scores'].append(cosim[0]) # updtae the frame data structure with the anchor tweet and
+                        retained_pair +=1
+                        #frame['Window_'+str(window)]['Tweets Pair'].append(tweet_pair) # store the tweets
+                    frame['Window_'+str(window)]['Counter'].append((anchor_index, retained_pair)) # updtae the frame data structure with the anchor tweet and
+                    # update the score Tracker
+                    q = np.array(frame['Window_'+str(window)]['Top Scores']) # convert list of top scores to np array for computational ease
+                    while q.shape[0]>1: # execute as long as length of the array is > 1
+                        frame['Window_'+str(window)]['Score Tracker'].append((q.max(),q.argmax())) # track top scores and their indices in windows
+                        q = np.delete(q, q.argmax()) #  delete used score and index
+                    # update indices of anchor and other tweets
+                    anchor_index +=1 # pick the next tweet as the next anchor
+                    other_index +=1 # shrink the window size by a factor of 1
+            # update stopping criteria:
+            k+=1
         return frame
+
 
     def view_results0(self, scores):
         self.scores = scores
@@ -162,9 +210,10 @@ if __name__=='__main__':
     """The main function to initialise/trigger the Scalable class to make its methods available"""
     trigger = Scalable('test.csv',100) # the window_size here is being overshadowed by the window_size in tweets_batch function
     stream = trigger.tweets_stream() # stream of tweets to pull out m batches
-    batch = trigger.tweets_batch(stream)#, 313) # batch of tweets from stream of tweets
-    sim_scores = trigger.tweets_sim(batch) # print(sim_scores)
-    frame = trigger.frame(batch)
+    batch = trigger.tweets_batch(stream, window_size=50)#, 313) # batch of tweets from stream of tweets
+    sim_scores = trigger.tweets_sim(batch, ) # print(sim_scores)
+    #window = trigger.frame(batch) # single window and many anchor tweets
+    frame = trigger.frame(batch, frame_size=3) #  many windows and multiple anchor tweets for each window
     #view_result0 = trigger.view_results(sim_scores) # visualise simialriy scores
     print(frame)
     view_result = trigger.view_results(frame) # visualise simialriy scores
