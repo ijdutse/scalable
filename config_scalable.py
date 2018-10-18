@@ -169,26 +169,10 @@ class Scalable (object):
             # update stopping criteria:
             k+=1
         return frame
-
-
-    def view_results0(self, scores):
-        self.scores = scores
-        """This function visualises the pairwise simialrity scores between pair of tweets in a window"""
-        plt.plot(range(len(scores)),scores)
-        # format the x-axis to print integers at certain intervals:
-        locator = matplotlib.ticker.MultipleLocator(10)
-        plt.gca().xaxis.set_major_locator(locator)
-        #formatter =  matplotlib.ticker.StrMethodFormatter("{x:0f}")
-        #plt.gca().xaxis.set_major_formatter(formatter)
-        plt.xlabel('Index')#, rotation=90)
-        plt.ylabel('Scores')
-        plt.title('Similarity between anchor and other tweets')
-        plt.xticks(rotation=90)
-        plt.show()
-
+# VISUALISATIONS:
     def view_results(self, frame):
         self.frame = frame
-        """This function visualises the pairwise simialrity scores for a number of windows in a frame"""
+        """This function visualises the pairwise simialrity scores for each window in a frame"""
         for key in frame:
             scores = [] # store top scores for every window in the frame
             for score in frame[key]['Top Scores']:
@@ -200,20 +184,37 @@ class Scalable (object):
             #formatter =  matplotlib.ticker.StrMethodFormatter("{x:0f}")
             #plt.gca().xaxis.set_major_formatter(formatter)
             plt.xlabel('Index')#, rotation=90)
-            plt.ylabel('Scores')
+            plt.ylabel('Score')
             plt.title('Similarity between anchor and other tweets in '+key)
             plt.xticks(rotation=90)
             plt.show()
 
+    def plot_bar(self, frame):
+        """This function visualises scores and corresponding indices for each window in a frame"""
+        self.frame = frame
+        for window in frame:
+            scores = [] # stores the top scores in each window in the frame
+            indices = [] #  stores indices of the scores
+            for tracked in frame[window]['Score Tracker']:
+                scores.append(tracked[0])
+                indices.append(tracked[1])
+            plt.bar(indices, scores)
+            plt.xlabel('Index')
+            plt.ylabel('Score')
+            plt.title('Most similar scores and indices in '+window)
+            plt.xticks(rotation=90)
+            plt.show()
 
+# MAIN ... run all:
 if __name__=='__main__':
     """The main function to initialise/trigger the Scalable class to make its methods available"""
     trigger = Scalable('test.csv',100) # the window_size here is being overshadowed by the window_size in tweets_batch function
     stream = trigger.tweets_stream() # stream of tweets to pull out m batches
-    batch = trigger.tweets_batch(stream, window_size=50)#, 313) # batch of tweets from stream of tweets
+    batch = trigger.tweets_batch(stream, window_size=150)#, 313) # batch of tweets from stream of tweets
     sim_scores = trigger.tweets_sim(batch, ) # print(sim_scores)
     #window = trigger.frame(batch) # single window and many anchor tweets
-    frame = trigger.frame(batch, frame_size=3) #  many windows and multiple anchor tweets for each window
+    frame = trigger.frame(batch, frame_size=5) #  many windows and multiple anchor tweets for each window
     #view_result0 = trigger.view_results(sim_scores) # visualise simialriy scores
     print(frame)
     view_result = trigger.view_results(frame) # visualise simialriy scores
+    bar_chart = trigger.plot_bar(frame) # visualise simialriy scores
