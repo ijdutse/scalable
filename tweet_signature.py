@@ -54,7 +54,7 @@ class TweetSignature(object):
         while k < frame_size:
             for window, window_tweet in zip(range(window_size),window_tweets):
                 frame['Window_'+str(window)] = {'AnchorID':[],'AnchorTweet':[],'OtherTweet':[],'PostingTimes':[], 'RelativeTime':[],\
-                'PairIndices':[],'CoSim':[],'Discards':[],'FavCount':[],'FolCount':[],'Friends':[],'Period':[],'Counter':[]}
+                'PairIndices':[],'CoSim':[],'Discards':[],'FavCount':[],'FolCount':[],'Friends':[],'Period':[]}#,'Counter':[]}
                 anchor_index = 0
                 other_index = 1
                 while other_index < len(window_tweet)-1:
@@ -91,12 +91,16 @@ class TweetSignature(object):
                             tracked_index+=1 # update the index of the inner tweet being compared with the anchor
                         except:
                             continue
-                    frame['Window_'+str(window)]['Counter'].append((anchor_index, retained_pair)) # updtae the frame data structure with the anchor tweet and
+                    #frame['Window_'+str(window)]['Counter'].append((anchor_index, retained_pair)) # updtae the frame data structure with the anchor tweet and
                     # update indices of anchor and other tweets
                     anchor_index +=1 # pick the next tweet as the next anchor
                     other_index +=1 # shrink the window size by a factor of 1
             k+=1 # update stopping criteria:
-        return frame
+            dfs = pd.DataFrame() # instantiate empty dataframe to store all windows in the frame ... 
+            for key in frame.keys():
+                df = pd.DataFrame(frame[key])
+                dfs = dfs.append(df)
+        return dfs
 
 # MAIN ... run all:
 if __name__=='__main__':
