@@ -54,6 +54,8 @@ class TweetStatus(object):
         The frame also contains top scores and corresponding indices in each window"""
 
         self.data_tuple = data_tuple
+        #self.output_file = output_file
+
         frame_size = 10
         window_size = int(len(data_tuple)/frame_size) # size of each widnow in the frame
         window_tweets = np.array_split(data_tuple, frame_size) # split tweets into window tweets according to the frame size, default is 3
@@ -101,7 +103,7 @@ class TweetStatus(object):
                     anchor_index +=1 # pick the next tweet as the next anchor
                     other_index +=1 # shrink the window size by a factor of 1
             k+=1 # update stopping criteria:
-            #dfs = pd.DataFrame() # instantiate empty dataframe to store all windows in the frame ...
+            dfs = pd.DataFrame() # instantiate empty dataframe to store all windows in the frame ...
             for key in frame.keys(): # update the dataframe ....
                 df = pd.DataFrame(frame[key])
                 dfs = dfs.append(df)
@@ -110,11 +112,11 @@ class TweetStatus(object):
 # MAIN ... run all:
 if __name__=='__main__':
     trigger = TweetStatus()
-    data_tuples = trigger.get_data_list('sbt_all_extracts_numeric_columns_del.csv', chunksize=201)
+    data_tuples = trigger.get_data_list('sbt_all_extracts_numeric_columns_del.csv', chunksize=101)
     ###################################################
 
     # MULTIPROCESSING/USING MULTIPLE CORES ...
-    mp = Pool()
+    """mp = Pool()
     start = time.time()
     dfs = pd.DataFrame()
     df = mp.map(trigger.get_tweet_status,data_tuples)
@@ -124,15 +126,17 @@ if __name__=='__main__':
     print(len(dfs))
     print(dfs)
     stop = time.time() - start
-    print(stop)
+    print(stop)"""
 
     # SEQUENTIAL/USING SINGLE CORE:
-    """start1 = time.time()
+    start1 = time.time()
     dfs = pd.DataFrame()
     for data in data_tuples:
         df = trigger.get_tweet_status(data)
-        dfs = dfs.append(df)
+        #df.to_csv('del_me.csv')
+        #dfs = dfs.append(df)
+    #dfs.to_csv('del_dfs.csv')
     print(len(dfs))
     print(dfs)
     stop1 = time.time() - start1
-    print(stop1)"""
+    print(stop1)
